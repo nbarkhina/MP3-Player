@@ -17,7 +17,7 @@ Put all of your MP3's into the media\ folder. Then fill out the audio.json with 
 - `npm install -g typescript`
 - `tsc`
 
-![screenshot](./screenshot.jpg)
+![screenshot](screenshot.jpg)
 
 # Scanner App (Optional)
 You can  use the scanner program to generate an audio.json based on whatever songs are in the media directory. This will populate the filenames and MP3 Metadata. You can use it by doing the following:

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Audio Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.9.6/rivets.bundled.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+  <script src="NoSleep.min.js"></script>
+</head>    
+<style>
+  a.nav-link.active:hover {
+    color: white;
+  }
+
+  .album_style {
+    font-size: 10pt;
+    color: grey;
+    margin-left: 20px;
+  }
+</style>
+
+<body>
+  <div class="container text-center" id="divLoading">
+    <div style="margin-top: 200px;">
+      Loading...
+    </div>
+  </div>
+  <div class="container text-center" id="divMain" style="display: none;">
+    <h1>
+      Audio Player
+    </h1>
+    <div>
+      <button class="btn btn-primary mt-4" onclick="myApp.btnPrev()">
+        <i class="fa fa-backward"></i> Prev</button>
+      <button class="btn btn-primary mt-4" onclick="myApp.btnPause()"
+        rv-if="data.isPaused | ev '==false'">Pause</button>
+      <button class="btn btn-primary mt-4" onclick="myApp.btnPlay()" rv-if="data.isPaused">Play</button>
+      <button class="btn btn-primary mt-4" onclick="myApp.btnNext()">Next <i class="fa fa-forward"></i></button>
+    </div>
+
+
+    <div>
+      <audio id="myAudio" controls class="mt-4" style="width: 100%;">
+        <source id="mySource" type="audio/mpeg" />
+      </audio>
+    </div>
+
+    <div class="card" rv-if="data.currentAudioFile"
+      style="width: 18rem;margin-left: auto;margin-right: auto;margin-top: 20px;">
+      <div class="card-body">
+        <h5 class="card-title">{data.currentAudioFile.Title}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">{data.currentAudioFile.Artist}</h6>
+        <p class="card-text">{data.currentAudioFile.Album}</p>
+      </div>
+    </div>
+
+
+    <ul class="nav nav-pills nav-fill mt-4">
+      <li class="nav-item">
+        <a class="nav-link active bg-info" onclick="myApp.btnSongs()" id="navSongs" style="cursor: pointer;">Songs</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" onclick="myApp.btnPlaylists()" id="navPlaylists" style="cursor: pointer;">Playlists</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" onclick="myApp.btnOptions()" id="navOptions" style="cursor: pointer;">Options</a>
+      </li>
+    </ul>
+
+
+    <div class="table-responsive" rv-if="data.currentTab | ev '==1'">
+      <div class="mt-4" style="padding-left: 5px; padding-right: 5px;padding-bottom: 5px;">
+        <input class="form-control" type="text" id="txtSearch" placeholder="Search" oninput="myApp.txtSearchChanged(event)" />
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">File</th>
+            <th scope="col">Title</th>
+            <th scope="col">Artist</th>
+            <th scope="col">Album</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr rv-each-file="data.audioFilesFiltered">
+            <th scope="row" style="text-align: left;">
+              <table>
+                <tr>
+                  <td style="min-width: 110px;">
+                    <button class="btn btn-success" onclick="myApp.btnAddToPlaylist(this)" rv-id="file.ID">
+                      <i class="fa fa-plus" aria-hidden="true"></i>
+                    </button>
+                    <button class="btn btn-success" onclick="myApp.btnPlayAdHoc(this)" rv-id="file.ID">
+                      <i class="fa fa-play" aria-hidden="true"></i>
+                    </button>
+                  </td>
+                  <td>{ file.Filename }</td>
+                </tr>
+              </table>
+            </th>
+            <td>{ file.Title }</td>
+            <td>{ file.Artist }</td>
+            <td>{ file.Album }</td>
+          </tr>
+        </tbody>
+      </table>
+      <div>
+        <div class="mt-2" rv-html="data.resultsLabel"></div>
+        <div rv-html="data.songsLabel" class="text-muted"></div>
+      </div>
+      <div class="mt-4">
+        <button class="btn btn-primary" onclick="myApp.prevPage()" rv-disabled="data.disablePrev" >Prev Page</button>
+        <button class="btn btn-primary" onclick="myApp.nextPage()" rv-disabled="data.disableNext" >Next Page</button>
+      </div>
+    </div>
+
+
+    <div rv-if="data.currentTab | ev '==2'" class="mt-4">
+      <div class="card">
+        <div class="card-header">
+          Current Playlist
+        </div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item" rv-each-song="data.playlist" style="text-align: left;">
+            <button class="btn btn-secondary" onclick="myApp.btnPlaylistUp(this)" rv-id="song.ID">
+              <i class="fa fa-arrow-up" aria-hidden="true"></i></button>
+            <button class="btn btn-secondary" onclick="myApp.btnPlaylistDown(this)" rv-id="song.ID">
+              <i class="fa fa-arrow-down" aria-hidden="true"></i></button>
+            <button class="btn btn-secondary mr-4" onclick="myApp.btnPlaylistRemoveItem(this)" rv-id="song.ID">
+              <i class="fa fa-trash" aria-hidden="true"></i></button>
+            <b style="margin-right: 20px;">{song.PlaylistIndex}) </b>
+            <span rv-class-text-primary="song.IsPlaying">{song.Title}</span>
+            <span class="album_style">{song.Artist}</span>
+            <span class="album_style"> / </span>
+            <span class="album_style">{song.Album}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div rv-if="data.currentTab | ev '==3'" class="mt-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Ad-Hoc Playlist</h5>
+          <button class="btn btn-danger" onclick="myApp.clearPlaylist();">Clear Playlist</button>
+          <div class="form-check mt-4">
+            <label class="form-check-label text-muted" for="chkShuffle" style="margin-right: 20px;">
+              <input type="checkbox" class="form-check-input" id="chkShuffle" onchange="myApp.chkShuffleChanged(this)"
+              rv-checked="data.chkShuffle">
+              Shuffle Songs
+            </label>
+            <label class="form-check-label text-muted" for="chkIgnorePlaylist" style="margin-left: 20px;">
+              <input type="checkbox" class="form-check-input" id="chkIgnorePlaylist" onchange="myApp.chkIgnorePlaylistChanged(this)"
+              rv-checked="data.chkIgnorePlaylist">
+              Ignore Playlist
+            </label>
+          </div>
+          <h5 class="card-title mt-4">Saved Playlists</h5>
+          <div class="form-group col-md-4" style="margin-left: auto;margin-right:auto;margin-top: 20px;">
+            <select id="ddlPlaylist" class="form-control">
+              <option selected>Choose...</option>
+              <option rv-each-playlist="data.allPlaylists">{ playlist.Name }</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="myApp.btnSavePlaylist()">Save <i class="fa fa-floppy-o"></i></button>
+          <button class="btn btn-primary" onclick="myApp.btnLoadPlaylist()">Load <i class="fa fa-arrow-circle-down"></i></button>
+          <button class="btn btn-primary" onclick="myApp.btnDeletePlaylist()">Delete <i class="fa fa-trash-o"></i></button>
+          <div class="mt-4">
+            <button class="btn btn-primary" onclick="myApp.btnCreateNewPlaylist()" >Create New Playlist</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="createPlaylistModal" tabindex="-1" role="dialog" aria-labelledby="createPlaylistModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="createPlaylistModalLabel">Create Playlist</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input type="text" class="form-control" placeholder="Name" id="txtPlaylistName">
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="myApp.btnSubmitNewPlaylist()">Save changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="footer" style="margin-top: 20px; margin-bottom: 70px;">
+
+    </div>
+
+
+  </div>
+</body>
+<script type="text/javascript">
+  var rando = Math.floor(Math.random() * 100000);
+  var script = document.createElement('script');
+  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js';
+  script.setAttribute("data-main", 'config.js?v=' + rando);
+  document.getElementsByTagName('head')[0].appendChild(script);
+</script>
+
+</html>

@@ -1,4 +1,4 @@
 node_modules/
-media/
+media/*.mp3
 bin
 obj
